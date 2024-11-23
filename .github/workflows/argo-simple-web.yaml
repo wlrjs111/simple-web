@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simple-web
+  namespace: argocd
+spec:
+  destination:
+    namespace: default
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: 'https://github.com/your-repo-name/simple-web.git'
+    targetRevision: main
+    path: simple-service  # `simple-deploy.yaml`이 있는 디렉토리
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

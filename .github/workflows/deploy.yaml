@@ -1,0 +1,38 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main  # 메인 브랜치에 push 될 때 실행
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. 소스코드 체크아웃
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # 2. Docker 이미지 빌드 및 푸시
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/simple-web:latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/simple-web:latest
+
+    # 3. ArgoCD에 배포 요청
+    - name: Deploy to Kubernetes via ArgoCD
+      env:
+        ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+        ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+        ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+      run: |
+        argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+        argocd app sync simple-web
+        argocd app wait simple-web --timeout 300
